@@ -21,6 +21,20 @@ mysql --host "$DB_HOST" --port "$DB_PORT" --user "$DB_USER" --password="$DB_PASS
 
 3. Confirm the `queryscale` database contains the required banking tables.
 
+## Synthetic data generation
+
+Generate the default dataset in MySQL:
+
+```bash
+python scripts/seed.py
+```
+
+You can also override the defaults with arguments such as:
+
+```bash
+python scripts/seed.py --branches 50 --customers 10000 --accounts 15000 --transactions 100000 --loans 5000
+```
+
 ## Repository structure
 
 ```text
@@ -33,6 +47,7 @@ QueryScale/
 │   ├── README.md
 │   └── schema.sql
 └── scripts/
+    └── seed.py
 ```
 
 ## Notes
