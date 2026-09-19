@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import os
 import random
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
@@ -110,6 +112,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--iterations", type=int, default=100, help="Number of queries to execute in the workload batch.")
     parser.add_argument("--dry-run", action="store_true", help="Display the planned workload without executing database queries.")
     parser.add_argument("--list-queries", action="store_true", help="List the available query templates and exit.")
+    parser.add_argument("--log-path", default="data/query_logs.csv", help="Path for the query performance log CSV.")
     return parser.parse_args()
 
 
@@ -210,22 +213,62 @@ def build_workload_plan(iterations: int) -> List[Dict[str, Any]]:
     return queue
 
 
-def execute_batch(connection, iterations: int) -> List[Dict[str, Any]]:
+def write_log_rows(log_rows: Sequence[Dict[str, Any]], output_path: str) -> None:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "query_id",
+        "query_template",
+        "timestamp",
+        "execution_time_ms",
+        "frequency",
+        "tables",
+        "where_columns",
+        "join_columns",
+        "order_columns",
+    ]
+
+    file_exists = path.exists()
+    with path.open("a", newline="", encoding="utf-8") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerows(log_rows)
+
+
+def execute_batch(connection, iterations: int, log_path: str) -> List[Dict[str, Any]]:
     cursor = connection.cursor()
     bounds = fetch_id_bounds(cursor)
     workload = build_workload_plan(iterations)
     results = []
+    log_rows = []
 
     for item in workload:
         query = item["query"]
         params = build_query_arguments(bounds, query)
+        start_ts = time.perf_counter()
         cursor.execute(query["template"], params)
         rows = cursor.fetchall()
+        execution_ms = (time.perf_counter() - start_ts) * 1000.0
+
         results.append({
             "query_id": query["query_id"],
             "frequency": query["frequency"],
             "rows_returned": len(rows),
         })
+        log_rows.append({
+            "query_id": query["query_id"],
+            "query_template": query["template"],
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "execution_time_ms": round(execution_ms, 3),
+            "frequency": query["frequency"],
+            "tables": ";".join(query["tables"]),
+            "where_columns": ";".join(query["where_columns"]),
+            "join_columns": ";".join(query["join_columns"]),
+            "order_columns": ";".join(query["order_columns"]),
+        })
+
+    write_log_rows(log_rows, log_path)
     return results
 
 
@@ -257,10 +300,11 @@ def main() -> None:
 
     try:
         connection = make_connection()
-        summary = execute_batch(connection, args.iterations)
+        summary = execute_batch(connection, args.iterations, args.log_path)
         connection.close()
 
         print(f"Executed workload batch: {args.iterations} queries")
+        print(f"Query log written to: {args.log_path}")
         freq_counts: Dict[str, int] = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
         for row in summary:
             freq_counts[row["frequency"]] += 1

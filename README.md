@@ -35,6 +35,33 @@ You can also override the defaults with arguments such as:
 python scripts/seed.py --branches 50 --customers 10000 --accounts 15000 --transactions 100000 --loans 5000
 ```
 
+## Workload execution and performance logging
+
+Execute the baseline banking workload and capture real timing measurements in `data/query_logs.csv`:
+
+```bash
+python scripts/workload.py --iterations 100
+```
+
+Optional controls:
+
+```bash
+python scripts/workload.py --list-queries
+python scripts/workload.py --dry-run --iterations 5
+```
+
+The script records the following fields for each query execution:
+
+- `query_id`
+- `query_template`
+- `timestamp`
+- `execution_time_ms`
+- `frequency`
+- `tables`
+- `where_columns`
+- `join_columns`
+- `order_columns`
+
 ## Repository structure
 
 ```text
@@ -45,9 +72,13 @@ QueryScale/
 ├── requirements.txt
 ├── database/
 │   ├── README.md
+│   ├── queries.sql
 │   └── schema.sql
+├── data/
+│   └── query_logs.csv
 └── scripts/
-    └── seed.py
+    ├── seed.py
+    └── workload.py
 ```
 
 ## Notes
