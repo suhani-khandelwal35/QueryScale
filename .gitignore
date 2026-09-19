@@ -1,0 +1,21 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python cache and venvs
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# OS/editor artifacts
+.DS_Store
+.idea/
+.vscode/
+
+# Local database artifacts
+*.log
+
+# Python packaging
+*.egg-info/
