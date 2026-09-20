@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from backend.routes.benchmark import router as benchmark_router
 from backend.routes.queries import router as queries_router
 from backend.routes.recommendations import router as recommendations_router
 
 
 app = FastAPI(title="QueryScale", version="0.1.0")
+app.include_router(benchmark_router, prefix="/api")
 app.include_router(queries_router, prefix="/api")
 app.include_router(recommendations_router, prefix="/api")
 
