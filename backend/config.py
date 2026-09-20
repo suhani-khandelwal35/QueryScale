@@ -20,6 +20,7 @@ class Settings:
     db_host: str = os.getenv("DB_HOST", "127.0.0.1")
     db_port: int = int(os.getenv("DB_PORT", "3306"))
     db_name: str = os.getenv("DB_NAME", "queryscale")
+    db_test_name: str = os.getenv("DB_TEST_NAME", "queryscale_test")
     db_user: str = os.getenv("DB_USER", "root")
     db_password: str = os.getenv("DB_PASSWORD", "")
     db_charset: str = os.getenv("DB_CHARSET", "utf8mb4")
