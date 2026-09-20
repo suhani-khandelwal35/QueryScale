@@ -2,6 +2,106 @@
 
 const refreshButton = document.querySelector("#refresh-dashboard");
 const renderedAt = document.querySelector("#rendered-at");
+const workspaceState = document.querySelector("#workspace-state");
+
+function setMetric(name, value) {
+  const element = document.querySelector(`[data-metric="${name}"]`);
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+function showListEmpty(container, title, detail) {
+  container.replaceChildren();
+  const empty = document.createElement("div");
+  empty.className = "empty-state";
+  const mark = document.createElement("span");
+  mark.className = "empty-state-mark";
+  mark.setAttribute("aria-hidden", "true");
+  mark.textContent = "+";
+  const heading = document.createElement("p");
+  heading.textContent = title;
+  const explanation = document.createElement("span");
+  explanation.textContent = detail;
+  empty.append(mark, heading, explanation);
+  container.appendChild(empty);
+}
+
+function renderRecommendations(recommendations) {
+  const container = document.querySelector("#recommendation-list");
+  if (!container) {
+    return;
+  }
+  if (!Array.isArray(recommendations) || recommendations.length === 0) {
+    showListEmpty(container, "No recommendations loaded", "Run the analysis pipeline to populate this view.");
+    return;
+  }
+
+  container.replaceChildren();
+  recommendations.slice(0, 6).forEach((recommendation) => {
+    const item = document.createElement("article");
+    item.className = "recommendation-item";
+
+    const heading = document.createElement("div");
+    heading.className = "recommendation-heading";
+    const candidate = document.createElement("strong");
+    candidate.textContent = recommendation.candidate_id || "Candidate";
+    const priority = document.createElement("span");
+    priority.className = `priority priority-${String(recommendation.priority || "").toLowerCase()}`;
+    priority.textContent = recommendation.priority || "Unranked";
+    heading.append(candidate, priority);
+
+    const target = document.createElement("p");
+    target.className = "recommendation-target";
+    target.textContent = `${recommendation.table || "Unknown table"} / ${(recommendation.columns || []).join(", ")}`;
+
+    const reason = document.createElement("p");
+    reason.className = "recommendation-reason";
+    reason.textContent = recommendation.reason || "No reason provided.";
+
+    const score = document.createElement("span");
+    score.className = "recommendation-score";
+    score.textContent = `Score ${Number(recommendation.score || 0).toFixed(1)}`;
+    item.append(heading, target, reason, score);
+    container.appendChild(item);
+  });
+}
+
+async function fetchJson(url) {
+  const response = await fetch(url);
+  if (response.status === 404) {
+    return [];
+  }
+  if (!response.ok) {
+    throw new Error(`Request failed: ${url}`);
+  }
+  return response.json();
+}
+
+function updateSummary(queries, slowQueries, recommendations, benchmarkResults) {
+  setMetric("queries", queries.length);
+  setMetric("slow", slowQueries.length);
+  setMetric("recommendations", recommendations.length);
+  setMetric(
+    "high-priority",
+    recommendations.filter((recommendation) => String(recommendation.priority).toLowerCase() === "high").length,
+  );
+
+  if (!benchmarkResults.length) {
+    setMetric("before", "--");
+    setMetric("after", "--");
+    setMetric("speedup", "--");
+    setMetric("improvement", "--");
+    return;
+  }
+
+  const before = benchmarkResults.reduce((sum, row) => sum + Number(row.before_avg_ms || 0), 0) / benchmarkResults.length;
+  const after = benchmarkResults.reduce((sum, row) => sum + Number(row.after_avg_ms || 0), 0) / benchmarkResults.length;
+  setMetric("before", before.toFixed(1));
+  setMetric("after", after.toFixed(1));
+  setMetric("speedup", after ? `${(before / after).toFixed(2)}x` : "--");
+  setMetric("improvement", before ? `${(((before - after) / before) * 100).toFixed(1)}%` : "--");
+}
 
 function showChartEmpty(container, message) {
   if (!container) {
@@ -112,11 +212,49 @@ function renderFrequencyChart(queries) {
   });
 }
 
+async function loadDashboardData() {
+  try {
+    const [queries, slowQueries, recommendations, benchmarkResults] = await Promise.all([
+      fetchJson("/api/queries"),
+      fetchJson("/api/queries/slow"),
+      fetchJson("/api/recommendations"),
+      fetchJson("/api/benchmark/results"),
+    ]);
+    updateSummary(queries, slowQueries, recommendations, benchmarkResults);
+    renderRecommendations(recommendations);
+    renderPerformanceChart(benchmarkResults);
+    renderRecommendationChart(recommendations);
+    renderFrequencyChart(queries);
+    if (workspaceState) {
+      workspaceState.textContent = queries.length || recommendations.length || benchmarkResults.length
+        ? "Live data"
+        : "Awaiting artifacts";
+    }
+  } catch (error) {
+    setMetric("queries", "--");
+    setMetric("slow", "--");
+    setMetric("recommendations", "--");
+    setMetric("high-priority", "--");
+    showListEmpty(document.querySelector("#recommendation-list"), "API unavailable", "Start the local application to load dashboard data.");
+    showChartEmpty(document.querySelector("#performance-chart"), "API unavailable.");
+    showChartEmpty(document.querySelector("#recommendation-chart"), "API unavailable.");
+    showChartEmpty(document.querySelector("#frequency-chart"), "API unavailable.");
+    if (workspaceState) {
+      workspaceState.textContent = "API unavailable";
+    }
+    console.error(error);
+  }
+  if (renderedAt) {
+    renderedAt.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+  }
+}
+
 showChartEmpty(document.querySelector("#performance-chart"), "Benchmark data will appear here.");
 showChartEmpty(document.querySelector("#recommendation-chart"), "Recommendation scores will appear here.");
 showChartEmpty(document.querySelector("#frequency-chart"), "Workload frequency will appear here.");
 
 window.QueryScaleDashboard = Object.freeze({
+  loadDashboardData,
   renderPerformanceChart,
   renderRecommendationChart,
   renderFrequencyChart,
@@ -127,5 +265,7 @@ if (refreshButton) {
 }
 
 if (renderedAt) {
-  renderedAt.textContent = `Shell loaded ${new Date().toLocaleTimeString()}`;
+  renderedAt.textContent = "Loading dashboard";
 }
+
+loadDashboardData();

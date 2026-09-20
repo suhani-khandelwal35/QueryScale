@@ -49,6 +49,49 @@ def _aggregate_results(results: list[dict[str, object]]) -> dict[str, float | in
     }
 
 
+def read_benchmark_results() -> list[dict[str, Any]]:
+    """Read persisted benchmark measurements for dashboard consumers."""
+
+    result_path = _configured_result_path()
+    if not result_path.exists():
+        raise FileNotFoundError(f"Benchmark result file not found: {result_path}")
+
+    numeric_fields = {
+        "before_avg_ms",
+        "before_min_ms",
+        "before_max_ms",
+        "before_p95_ms",
+        "after_avg_ms",
+        "after_min_ms",
+        "after_max_ms",
+        "after_p95_ms",
+        "speedup",
+        "improvement_percentage",
+        "execution_count",
+    }
+    import csv
+
+    rows: list[dict[str, Any]] = []
+    with result_path.open("r", newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            parsed: dict[str, Any] = dict(row)
+            for field in numeric_fields:
+                parsed[field] = float(row.get(field, "0") or 0)
+            parsed["execution_count"] = int(parsed["execution_count"])
+            rows.append(parsed)
+    return rows
+
+
+@router.get("/results")
+def get_benchmark_results() -> list[dict[str, Any]]:
+    """Return persisted benchmark measurements without starting a new run."""
+
+    try:
+        return read_benchmark_results()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 @router.post("/{recommendation_id}")
 def benchmark_recommendation(
     recommendation_id: str,
