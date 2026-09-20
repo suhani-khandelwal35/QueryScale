@@ -24,6 +24,7 @@ class Settings:
     db_user: str = os.getenv("DB_USER", "root")
     db_password: str = os.getenv("DB_PASSWORD", "")
     db_charset: str = os.getenv("DB_CHARSET", "utf8mb4")
+    query_log_path: str = os.getenv("QUERY_LOG_PATH", "data/query_logs.csv")
 
     def mysql_config(self) -> dict[str, object]:
         return {
