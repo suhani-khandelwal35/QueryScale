@@ -27,6 +27,7 @@ def quote_identifier(identifier: str) -> str:
 def _server_config() -> dict[str, object]:
     config = settings.mysql_config()
     config.pop("database", None)
+    config["raise_on_warnings"] = False
     return config
 
 
@@ -94,7 +95,7 @@ def clone_test_database() -> tuple[str, ...]:
         return EXPECTED_TABLES
     except MySQLError as exc:
         connection.rollback()
-        raise RuntimeError("Unable to create the isolated QueryScale test database.") from exc
+        raise RuntimeError(f"Unable to create the isolated QueryScale test database: {exc}") from exc
     finally:
         cursor.close()
         connection.close()
