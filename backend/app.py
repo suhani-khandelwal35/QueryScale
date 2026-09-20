@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from backend.routes.benchmark import router as benchmark_router
 from backend.routes.queries import router as queries_router
@@ -13,6 +16,11 @@ app = FastAPI(title="QueryScale", version="0.1.0")
 app.include_router(benchmark_router, prefix="/api")
 app.include_router(queries_router, prefix="/api")
 app.include_router(recommendations_router, prefix="/api")
+app.mount(
+    "/dashboard",
+    StaticFiles(directory=Path(__file__).resolve().parents[1] / "dashboard", html=True),
+    name="dashboard",
+)
 
 
 @app.get("/health")
