@@ -30,6 +30,17 @@ EXISTING_INDEXES = {
     "Loans.loan_id": True,
     "Loans.customer_id": True,
 }
+EXISTING_COMPOSITE_INDEXES = {
+    "Transactions.txn_type,txn_date": True,
+}
+
+
+def _has_existing_index(table: str, columns: List[str]) -> bool:
+    """Match the complete indexed column signature, not only its first column."""
+
+    if len(columns) == 1:
+        return bool(EXISTING_INDEXES.get(f"{table}.{columns[0]}", False))
+    return bool(EXISTING_COMPOSITE_INDEXES.get(f"{table}.{','.join(columns)}", False))
 
 
 def _candidate_id(table: str, columns: List[str]) -> str:
@@ -137,7 +148,7 @@ def extract_features(log_path: str | Path, output_path: str | Path) -> List[Dict
             column_list = [column for column in columns if column]
             candidate_id = _candidate_id(table_name, column_list)
             table_size = TABLE_SIZES.get(table_name, 0)
-            existing_index = bool(EXISTING_INDEXES.get(f"{table_name}.{column_list[0]}", False)) if column_list else False
+            existing_index = _has_existing_index(table_name, column_list) if column_list else False
             feature_rows.append({
                 "candidate_id": candidate_id,
                 "query_id": row.get("query_id", ""),

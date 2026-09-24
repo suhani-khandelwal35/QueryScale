@@ -1,0 +1,1 @@
+"""QueryScale application package."""

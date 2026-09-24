@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10191a">
+  <title>QueryScale Dashboard</title>
+  <link rel="stylesheet" href="/dashboard/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/dashboard/" aria-label="QueryScale home">
+        <span class="brand-mark" aria-hidden="true">Q</span>
+        <span>QueryScale</span>
+      </a>
+      <div class="topbar-actions">
+        <span class="environment"><span class="status-dot" aria-hidden="true"></span> Local workspace</span>
+        <button class="icon-button" id="refresh-dashboard" type="button" title="Refresh dashboard" aria-label="Refresh dashboard">&#8635;</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Database performance workspace</p>
+          <h1 id="page-title">See the work your queries are doing.</h1>
+          <p class="intro-copy">A focused view of measured workload behavior, index recommendations, and performance impact.</p>
+        </div>
+        <div class="run-state" aria-label="Dashboard state">
+          <span class="run-state-label">Workspace state</span>
+          <strong id="workspace-state">Awaiting data</strong>
+        </div>
+      </section>
+
+      <section class="metric-grid" aria-label="Query performance summary">
+        <article class="metric-card metric-card-primary">
+          <span class="metric-label">Queries analyzed</span>
+          <strong class="metric-value" data-metric="queries">--</strong>
+          <span class="metric-note">Measured executions</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Slow queries</span>
+          <strong class="metric-value" data-metric="slow">--</strong>
+          <span class="metric-note">Above the latency threshold</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Recommendations</span>
+          <strong class="metric-value" data-metric="recommendations">--</strong>
+          <span class="metric-note">Generated candidates</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">High priority</span>
+          <strong class="metric-value" data-metric="high-priority">--</strong>
+          <span class="metric-note">Ready for review</span>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel recommendations-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Index candidates</p>
+              <h2>Top recommendations</h2>
+            </div>
+            <span class="panel-index">01</span>
+          </div>
+          <div class="recommendation-list" id="recommendation-list">
+            <div class="empty-state">
+              <span class="empty-state-mark" aria-hidden="true">+</span>
+              <p>No recommendations loaded</p>
+              <span>Run the analysis pipeline to populate this view.</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel performance-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Measured impact</p>
+              <h2>Performance comparison</h2>
+            </div>
+            <span class="panel-index">02</span>
+          </div>
+          <div class="comparison">
+            <div class="comparison-value">
+              <span>Before</span>
+              <strong data-metric="before">--</strong>
+              <small>milliseconds</small>
+            </div>
+            <div class="comparison-arrow" aria-hidden="true">&#8594;</div>
+            <div class="comparison-value comparison-value-after">
+              <span>After</span>
+              <strong data-metric="after">--</strong>
+              <small>milliseconds</small>
+            </div>
+          </div>
+          <div class="impact-line">
+            <span>Speedup</span>
+            <strong data-metric="speedup">--</strong>
+          </div>
+          <div class="impact-line">
+            <span>Improvement</span>
+            <strong data-metric="improvement">--</strong>
+          </div>
+        </article>
+      </section>
+
+      <section class="charts-grid" aria-label="Performance visualizations">
+        <article class="panel chart-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Execution time</p>
+              <h2>Before vs after</h2>
+            </div>
+            <span class="panel-index">03</span>
+          </div>
+          <div class="chart-legend" aria-label="Chart legend">
+            <span><i class="legend-swatch legend-before"></i>Before</span>
+            <span><i class="legend-swatch legend-after"></i>After</span>
+          </div>
+          <div class="chart-area" id="performance-chart"></div>
+        </article>
+
+        <article class="panel chart-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Recommendation scores</p>
+              <h2>Top indexes</h2>
+            </div>
+            <span class="panel-index">04</span>
+          </div>
+          <div class="chart-area" id="recommendation-chart"></div>
+        </article>
+
+        <article class="panel chart-panel chart-panel-wide">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Workload shape</p>
+              <h2>Frequency vs latency</h2>
+            </div>
+            <span class="panel-index">05</span>
+          </div>
+          <div class="chart-area chart-area-wide" id="frequency-chart"></div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>QueryScale local application</span>
+      <span id="rendered-at">Dashboard shell</span>
+    </footer>
+  </div>
+  <script src="/dashboard/dashboard.js"></script>
+</body>
+</html>
